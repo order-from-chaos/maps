@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maps">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>Maps</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0a0a0a; color: #f0f0f0; font: 15px -apple-system, system-ui, sans-serif; }
+  #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0a; }
+  .leaflet-container { background: #1a1a1a; }
+  .leaflet-popup-content-wrapper { background: #1a1a1a; color: #f0f0f0; border-radius: 10px; border: 1px solid #2a2a2a; }
+  .leaflet-popup-tip { background: #1a1a1a; }
+  .leaflet-popup-content { margin: 14px 16px; min-width: 200px; }
+  .pin-popup h3 { margin: 0 0 4px; font-size: 16px; }
+  .pin-popup .note { font-size: 12px; color: #888; margin-bottom: 10px; }
+  .pin-popup .cat { font-size: 10px; color: #4a9eff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .pin-popup a.btn {
+    display: block; padding: 10px 12px; margin: 6px 0; text-decoration: none;
+    border-radius: 8px; font-size: 14px; font-weight: 500; text-align: center;
+    border: 1px solid transparent;
+  }
+  .pin-popup a.naver { background: #03c75a; color: #fff; border-color: #03c75a; }
+  .pin-popup a.kakao { background: #fae100; color: #191919; border-color: #fae100; }
+  .pin-popup a.btn:active { opacity: 0.7; }
+
+  .topbar {
+    position: absolute; top: env(safe-area-inset-top, 10px); left: 10px; right: 10px;
+    padding: 10px 14px; background: rgba(20,20,20,0.88); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); border-radius: 10px; z-index: 1000;
+    display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+    border: 1px solid #2a2a2a;
+  }
+  .topbar .title { font-weight: 600; }
+  .topbar .count { color: #888; font-size: 11px; }
+
+  .leaflet-control-attribution { font-size: 9px; background: rgba(10,10,10,0.6) !important; color: #666 !important; }
+  .leaflet-control-attribution a { color: #888 !important; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="title" id="title">Maps</span>
+  <span class="count" id="count">—</span>
+</div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(async () => {
+  const res = await fetch('pins.json?v=' + Date.now()).catch(() => null);
+  const data = res && res.ok ? await res.json() : { meta: { title: 'Maps', center: [33.5, 126.5], zoom: 11 }, pins: [] };
+
+  document.getElementById('title').textContent = data.meta.title || 'Maps';
+  document.getElementById('count').textContent = data.pins.length + ' pins';
+
+  const map = L.map('map', { zoomControl: true, attributionControl: true })
+    .setView(data.meta.center || [33.5, 126.5], data.meta.zoom || 11);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+
+  const catColor = { anchor: '#4a9eff', transit: '#a78bfa', scenic: '#34d399', food: '#fb923c', cafe: '#ec4899', stay: '#facc15', other: '#9ca3af' };
+
+  const bounds = [];
+  data.pins.forEach(p => {
+    const color = catColor[p.category] || catColor.other;
+    const marker = L.circleMarker([p.lat, p.lng], {
+      radius: 9, color: '#0a0a0a', weight: 2, fillColor: color, fillOpacity: 1
+    }).addTo(map);
+    bounds.push([p.lat, p.lng]);
+
+    const nmapUrl = `nmap://place?lat=${p.lat}&lng=${p.lng}&name=${encodeURIComponent(p.name)}&appname=maps.pwa`;
+    const kakaoUrl = `kakaomap://look?p=${p.lat},${p.lng}`;
+
+    const html = `
+      <div class="pin-popup">
+        <div class="cat" style="color:${color}">${p.category || 'pin'}</div>
+        <h3>${escapeHtml(p.name)}</h3>
+        ${p.note ? `<div class="note">${escapeHtml(p.note)}</div>` : ''}
+        <a class="btn naver" href="${nmapUrl}">네이버 지도 열기</a>
+        <a class="btn kakao" href="${kakaoUrl}">카카오맵 열기</a>
+      </div>
+    `;
+    marker.bindPopup(html, { closeButton: false, maxWidth: 280 });
+  });
+
+  if (bounds.length > 1) {
+    try { map.fitBounds(bounds, { padding: [60, 60] }); } catch(e) {}
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+})();
+</script>
+</body>
+</html>

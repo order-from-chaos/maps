@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "Jeju 2026",
+    "center": [33.4996, 126.5312],
+    "zoom": 12,
+    "updated": "2026-04-13"
+  },
+  "pins": [
+    {
+      "id": "sample-1",
+      "name": "광양9길 10 (기준점)",
+      "lat": 33.4996,
+      "lng": 126.5312,
+      "category": "anchor",
+      "note": "T1/T2 검증에 쓴 좌표"
+    },
+    {
+      "id": "sample-2",
+      "name": "제주공항",
+      "lat": 33.5104,
+      "lng": 126.4914,
+      "category": "transit",
+      "note": "도착지"
+    },
+    {
+      "id": "sample-3",
+      "name": "성산일출봉",
+      "lat": 33.4585,
+      "lng": 126.9423,
+      "category": "scenic",
+      "note": "동쪽 대표 명소"
+    },
+    {
+      "id": "sample-4",
+      "name": "협재해수욕장",
+      "lat": 33.3942,
+      "lng": 126.2396,
+      "category": "scenic",
+      "note": "서쪽"
+    },
+    {
+      "id": "sample-5",
+      "name": "서귀포 올레시장",
+      "lat": 33.2495,
+      "lng": 126.5616,
+      "category": "food",
+      "note": "남쪽 재래시장"
+    }
+  ]
+}
